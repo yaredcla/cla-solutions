@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hashPassword, normalizeUsername } from "@/lib/admin-auth";
+import { adminCookieOptions, hashPassword, normalizeUsername } from "@/lib/admin-auth";
 import { ADMIN_SESSION_COOKIE, getAdminFromRequest } from "@/lib/admin-session";
 import { readAdminUsers, saveAdminUsers } from "@/lib/data-store";
 import type { AdminAccount } from "@/lib/site-state";
@@ -51,13 +51,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   const response = NextResponse.json(toPublicAdmin(updated));
   if (updated.id === admin.id && updated.status !== "active") {
-    response.cookies.set(ADMIN_SESSION_COOKIE, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: 0
-    });
+    response.cookies.set(ADMIN_SESSION_COOKIE, "", adminCookieOptions(0));
   }
   return response;
 }
@@ -78,13 +72,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   await saveAdminUsers(nextUsers);
   const response = NextResponse.json({ ok: true });
   if (id === admin.id) {
-    response.cookies.set(ADMIN_SESSION_COOKIE, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: 0
-    });
+    response.cookies.set(ADMIN_SESSION_COOKIE, "", adminCookieOptions(0));
   }
   return response;
 }

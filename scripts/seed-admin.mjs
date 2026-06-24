@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { randomBytes, scryptSync } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { loadLocalEnv } from "./env.mjs";
 
@@ -9,7 +9,6 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is required to seed the default admin.");
 }
 
-const sessionSecret = process.env.ADMIN_SESSION_SECRET ?? "cla-solutions-admin-session-secret";
 const sql = neon(databaseUrl);
 
 function normalizeUsername(username) {
@@ -17,11 +16,19 @@ function normalizeUsername(username) {
 }
 
 function hashPassword(password) {
-  return createHmac("sha256", sessionSecret).update(password).digest("hex");
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
 }
 
-const username = normalizeUsername(process.env.DEFAULT_ADMIN_USERNAME ?? "admin");
-const password = process.env.DEFAULT_ADMIN_PASSWORD ?? "admin12345";
+const username = normalizeUsername(process.env.DEFAULT_ADMIN_USERNAME ?? "");
+const password = process.env.DEFAULT_ADMIN_PASSWORD ?? "";
+if (!username || !password) {
+  throw new Error("DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD are required to seed an admin.");
+}
+if (password.length < 12) {
+  throw new Error("DEFAULT_ADMIN_PASSWORD must be at least 12 characters.");
+}
 const now = new Date().toISOString();
 
 await sql`

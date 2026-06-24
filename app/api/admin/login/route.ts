@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSessionToken, normalizeUsername, verifyPassword } from "@/lib/admin-auth";
+import { adminCookieOptions, createSessionToken, hashPassword, normalizeUsername, passwordNeedsRehash, verifyPassword } from "@/lib/admin-auth";
 import { findAdminUserByUsername, upsertAdminUser } from "@/lib/data-store";
 import { ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
 
@@ -17,7 +17,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid username or password." }, { status: 401 });
   }
 
-  const nextAdmin = { ...admin, lastLoginAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const nextAdmin = {
+    ...admin,
+    passwordHash: passwordNeedsRehash(admin.passwordHash) ? hashPassword(password) : admin.passwordHash,
+    lastLoginAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
   await upsertAdminUser(nextAdmin);
 
   const response = NextResponse.json({
@@ -31,12 +36,6 @@ export async function POST(request: Request) {
       lastLoginAt: nextAdmin.lastLoginAt
     }
   });
-  response.cookies.set(ADMIN_SESSION_COOKIE, createSessionToken(nextAdmin.id), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7
-  });
+  response.cookies.set(ADMIN_SESSION_COOKIE, createSessionToken(nextAdmin.id), adminCookieOptions());
   return response;
 }

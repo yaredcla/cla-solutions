@@ -9,7 +9,9 @@
     "lint": "next lint",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed-admin.mjs",
-    "db:setup": "npm run db:migrate && npm run db:seed"
+    "db:update-content": "node scripts/update-ethiopia-content.mjs",
+    "audit:production": "node scripts/audit-production.mjs",
+    "db:setup": "npm run db:migrate && npm run db:seed && npm run db:update-content"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

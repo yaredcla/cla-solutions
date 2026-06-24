@@ -1,174 +1,27 @@
-export type SiteSettings = {
-  companyName: string;
-  tagline: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  ctaPrimary: string;
-  ctaSecondary: string;
-  phone: string;
-  email: string;
-  location: string;
-  whatsapp: string;
-  telegram: string;
-  linkedin: string;
-  instagram: string;
-  facebook: string;
-  seoTitle: string;
-  seoDescription: string;
-  servicesTitle: string;
-  servicesCopy: string;
-  whyEyebrow: string;
-  whyTitle: string;
-  whyCopy: string;
-  portfolioTitle: string;
-  portfolioCopy: string;
-  processTitle: string;
-  processCopy: string;
-  testimonialsTitle: string;
-  testimonialsCopy: string;
-  faqTitle: string;
-  blogTitle: string;
-  aboutTitle: string;
-  aboutCopy: string;
-  ctaTitle: string;
-  ctaCopy: string;
-  contactTitle: string;
-};
+import { neon } from "@neondatabase/serverless";
+import { loadLocalEnv } from "./env.mjs";
 
-export type EditableService = {
-  id: string;
-  title: string;
-  description: string;
-  bullets: string[];
-};
+loadLocalEnv();
 
-export type EditablePortfolio = {
-  id: string;
-  title: string;
-  type: string;
-  description: string;
-  stack: string[];
-  result: string;
-  websiteUrl?: string;
-  logoUrl?: string;
-};
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required to update site content.");
+}
 
-export type EditableTestimonial = {
-  id: string;
-  quote: string;
-  name: string;
-  role: string;
-  company: string;
-};
+const sql = neon(databaseUrl);
+const rows = await sql`select data from site_state where id = 'main' limit 1`;
+const current = rows[0]?.data ?? {};
 
-export type EditableFaq = {
-  id: string;
-  question: string;
-  answer: string;
-};
-
-export type EditableTextItem = {
-  id: string;
-  label: string;
-};
-
-export type EditableMetric = {
-  id: string;
-  value: string;
-  label: string;
-  description?: string;
-};
-
-export type EditableProcessStep = {
-  id: string;
-  title: string;
-  description: string;
-};
-
-export type EditableBlogPost = {
-  id: string;
-  title: string;
-  category: string;
-  readTime: string;
-  excerpt: string;
-  url?: string;
-};
-
-export type EditableTeamMember = {
-  id: string;
-  name: string;
-  role: string;
-  description: string;
-  specialties: string[];
-  imageUrl?: string;
-};
-
-export type SiteState = {
-  settings: SiteSettings;
-  services: EditableService[];
-  portfolio: EditablePortfolio[];
-  testimonials: EditableTestimonial[];
-  faqs: EditableFaq[];
-  trustSignals: EditableTextItem[];
-  features: EditableTextItem[];
-  heroStats: EditableMetric[];
-  heroHighlights: EditableMetric[];
-  growthMetrics: EditableMetric[];
-  performanceMetrics: EditableMetric[];
-  process: EditableProcessStep[];
-  blogPosts: EditableBlogPost[];
-  team: EditableTeamMember[];
-};
-
-export type AdminStatus = "active" | "paused";
-
-export type AdminAccount = {
-  id: string;
-  username: string;
-  passwordHash: string;
-  status: AdminStatus;
-  createdAt: string;
-  updatedAt: string;
-  lastLoginAt?: string;
-};
-
-export type PublicAdminAccount = Omit<AdminAccount, "passwordHash">;
-
-export type InboxMessage = {
-  id: string;
-  name: string;
-  company: string;
-  email: string;
-  phone: string;
-  service: string;
-  message: string;
-  status: "new" | "read" | "replied" | "archived";
-  createdAt: string;
-};
-
-export type AnalyticsSummary = {
-  totalMessages: number;
-  unreadMessages: number;
-  respondedMessages: number;
-  totalServices: number;
-  totalPortfolioItems: number;
-  leadScore: number;
-  monthlyTrend: Array<{ label: string; value: number }>;
-  serviceCounts: Array<{ label: string; value: number }>;
-};
-
-export const defaultSiteState: SiteState = {
+const next = {
+  ...current,
   settings: {
-    companyName: "CLA Solutions",
+    ...(current.settings ?? {}),
     tagline: "Transforming Ethiopian Businesses Through Digital Innovation",
-    heroTitle: "Professional Websites That Grow Your Business",
     heroSubtitle:
       "We help Ethiopian businesses attract more customers, build trust, and increase revenue through modern digital solutions.",
-    ctaPrimary: "Get Free Consultation",
-    ctaSecondary: "View Our Work",
+    location: "Serving Ethiopia",
     phone: "+251994184777",
     email: "yaredwondwossen@gmail.com",
-    location: "Serving Ethiopia",
     whatsapp: "251994184777",
     telegram: "https://web.telegram.org/k/",
     linkedin: "https://www.linkedin.com/in/yared-wondwossen-8425a4377",
@@ -199,10 +52,11 @@ export const defaultSiteState: SiteState = {
     aboutCopy:
       "A focused Ethiopian technology team combining strategy, design, and engineering to help local businesses grow.",
     ctaTitle: "Ready to Grow Your Business Online?",
-    ctaCopy: "Let us build a digital presence that helps your Ethiopian business stand out.",
+    ctaCopy:
+      "Let us build a digital presence that helps your Ethiopian business stand out.",
     contactTitle: "Tell us what you want to build."
   },
-  services: [
+  services: current.services ?? [
     {
       id: "website-development",
       title: "Website Development",
@@ -220,16 +74,18 @@ export const defaultSiteState: SiteState = {
     {
       id: "web-applications",
       title: "Web Applications",
-      description: "Custom dashboards and management systems that streamline everyday operations.",
+      description:
+        "Custom dashboards and management systems that streamline everyday operations.",
       bullets: ["Custom systems", "Dashboards", "Management platforms"]
     }
   ],
-  portfolio: [
+  portfolio: current.portfolio ?? [
     {
       id: "hotel-booking-website",
       title: "Hotel Booking Website",
       type: "Hospitality",
-      description: "A booking-focused site for a boutique hotel with room discovery, inquiry flows, and local SEO.",
+      description:
+        "A booking-focused site for a boutique hotel with room discovery, inquiry flows, and local SEO.",
       stack: ["Next.js", "CMS", "SEO"],
       result: "42% more direct inquiries"
     },
@@ -237,7 +93,8 @@ export const defaultSiteState: SiteState = {
       id: "real-estate-platform",
       title: "Real Estate Platform",
       type: "Property",
-      description: "Property listings, lead capture, and agent workflows for a growing Addis Ababa brokerage.",
+      description:
+        "Property listings, lead capture, and agent workflows for a growing Addis Ababa brokerage.",
       stack: ["React", "Maps", "CRM"],
       result: "3x faster lead follow-up"
     },
@@ -245,12 +102,13 @@ export const defaultSiteState: SiteState = {
       id: "ecommerce-store",
       title: "E-Commerce Store",
       type: "Retail",
-      description: "A catalog and order-management storefront for a regional product business.",
+      description:
+        "A catalog and order-management storefront for an Ethiopian product business.",
       stack: ["Commerce", "Payments", "Inventory"],
       result: "Launched in 21 days"
     }
   ],
-  testimonials: [
+  testimonials: current.testimonials ?? [
     {
       id: "testimonial-1",
       quote:
@@ -258,30 +116,22 @@ export const defaultSiteState: SiteState = {
       name: "Alpha Lencho",
       role: "CEO and Founder",
       company: "Alpha Labs"
-      
     },
     {
       id: "testimonial-2",
       quote:
-        "Cla-solutions have contributed alot to my Entrepreneurial Journey.",
+        "CLA Solutions have contributed a lot to my entrepreneurial journey.",
       name: "Hana Tariku",
       role: "Founder",
       company: "Hani Buys"
-    },
-    {
-      id: "testimonial-3",
-      quote:
-        "They gave us the structure, speed, and support we needed to launch online without overwhelming our team.",
-      name: "Amina Yusuf",
-      role: "Operations Lead",
-      company: "EastLink Foods"
     }
   ],
-  faqs: [
+  faqs: current.faqs ?? [
     {
       id: "faq-1",
       question: "How long does a business website take?",
-      answer: "Most focused business websites launch in 2 to 4 weeks, depending on content readiness and review speed."
+      answer:
+        "Most focused business websites launch in 2 to 4 weeks, depending on content readiness and review speed."
     },
     {
       id: "faq-2",
@@ -292,10 +142,11 @@ export const defaultSiteState: SiteState = {
     {
       id: "faq-3",
       question: "Do you provide ongoing maintenance?",
-      answer: "Yes. Maintenance plans can include updates, monitoring, backups, security checks, SEO improvements, and content support."
+      answer:
+        "Yes. Maintenance plans can include updates, monitoring, backups, security checks, SEO improvements, and content support."
     }
   ],
-  trustSignals: [
+  trustSignals: current.trustSignals ?? [
     { id: "trust-support", label: "24/7 Support" },
     { id: "trust-delivery", label: "Fast Delivery" },
     { id: "trust-mobile", label: "Mobile Optimized" },
@@ -316,7 +167,7 @@ export const defaultSiteState: SiteState = {
     { id: "hero-stat-services", value: "6", label: "Core service areas" },
     { id: "hero-stat-market", value: "ET", label: "Ethiopian market focus" }
   ],
-  heroHighlights: [
+  heroHighlights: current.heroHighlights ?? [
     { id: "highlight-launch", value: "21 days", label: "Launch plan" },
     { id: "highlight-performance", value: "A-grade", label: "Performance" },
     { id: "highlight-security", value: "Built in", label: "Security" }
@@ -327,13 +178,33 @@ export const defaultSiteState: SiteState = {
     { id: "growth-speed", value: "46", label: "Speed" },
     { id: "growth-trust", value: "57", label: "Trust" }
   ],
-  performanceMetrics: [
-    { id: "metric-responsive", value: "100%", label: "Mobile Responsive", description: "Designed for how Ethiopian customers browse and buy." },
-    { id: "metric-uptime", value: "99.9%", label: "Uptime Ready", description: "Reliable infrastructure for daily business operations." },
-    { id: "metric-performance", value: "A+", label: "Performance Focus", description: "Fast experiences that build confidence and reduce drop-off." },
-    { id: "metric-support", value: "24h", label: "Support Response", description: "Practical support when your team needs it." }
+  performanceMetrics: current.performanceMetrics ?? [
+    {
+      id: "metric-responsive",
+      value: "100%",
+      label: "Mobile Responsive",
+      description: "Designed for how Ethiopian customers browse and buy."
+    },
+    {
+      id: "metric-uptime",
+      value: "99.9%",
+      label: "Uptime Ready",
+      description: "Reliable infrastructure for daily business operations."
+    },
+    {
+      id: "metric-performance",
+      value: "A+",
+      label: "Performance Focus",
+      description: "Fast experiences that build confidence and reduce drop-off."
+    },
+    {
+      id: "metric-support",
+      value: "24h",
+      label: "Support Response",
+      description: "Practical support when your team needs it."
+    }
   ],
-  process: [
+  process: current.process ?? [
     { id: "process-discovery", title: "Discovery", description: "Understanding your business goals" },
     { id: "process-planning", title: "Planning", description: "Creating the project roadmap" },
     { id: "process-design", title: "Design", description: "Building the UI and UX" },
@@ -347,61 +218,48 @@ export const defaultSiteState: SiteState = {
       title: "Why Ethiopian businesses need mobile-first websites",
       category: "Strategy",
       readTime: "5 min read",
-      excerpt: "How mobile-first design helps Ethiopian companies reach more customers and convert interest into action."
+      excerpt:
+        "How mobile-first design helps Ethiopian companies reach more customers and convert interest into action."
     },
     {
       id: "blog-seo-ethiopia",
       title: "A practical SEO checklist for Ethiopian companies",
       category: "Growth",
       readTime: "7 min read",
-      excerpt: "The essential technical and content steps Ethiopian businesses can use to improve search visibility."
+      excerpt:
+        "The essential technical and content steps Ethiopian businesses can use to improve search visibility."
     },
     {
       id: "blog-project-planning",
       title: "What to prepare before starting a web project",
       category: "Planning",
       readTime: "4 min read",
-      excerpt: "A concise preparation guide for a faster, clearer, and more successful website project."
+      excerpt:
+        "A concise preparation guide for a faster, clearer, and more successful website project."
     }
   ],
-  team: [
+  team: current.team ?? [
     {
       id: "team-yared",
       name: "Yared Wondwossen",
       role: "Founder and Digital Solutions Lead",
       description:
         "Leads CLA Solutions with a focus on practical digital systems that help Ethiopian businesses earn trust and grow.",
-      specialties: ["Web strategy", "Full-stack development", "Digital transformation"]
+      specialties: [
+        "Web strategy",
+        "Full-stack development",
+        "Digital transformation"
+      ]
     }
   ]
 };
 
-export function normalizeSiteState(value: Partial<SiteState> | null | undefined): SiteState {
-  const source = value ?? {};
-  return {
-    ...defaultSiteState,
-    ...source,
-    settings: { ...defaultSiteState.settings, ...(source.settings ?? {}) },
-    services: source.services ?? defaultSiteState.services,
-    portfolio: source.portfolio ?? defaultSiteState.portfolio,
-    testimonials: source.testimonials ?? defaultSiteState.testimonials,
-    faqs: source.faqs ?? defaultSiteState.faqs,
-    trustSignals: source.trustSignals ?? defaultSiteState.trustSignals,
-    features: source.features ?? defaultSiteState.features,
-    heroStats: source.heroStats ?? defaultSiteState.heroStats,
-    heroHighlights: source.heroHighlights ?? defaultSiteState.heroHighlights,
-    growthMetrics: source.growthMetrics ?? defaultSiteState.growthMetrics,
-    performanceMetrics: source.performanceMetrics ?? defaultSiteState.performanceMetrics,
-    process: source.process ?? defaultSiteState.process,
-    blogPosts: source.blogPosts ?? defaultSiteState.blogPosts,
-    team: source.team ?? defaultSiteState.team
-  };
-}
+await sql`
+  insert into site_state (id, data, updated_at)
+  values ('main', ${JSON.stringify(next)}::jsonb, now())
+  on conflict (id) do update set
+    data = excluded.data,
+    updated_at = excluded.updated_at
+`;
 
-export function newMessageId() {
-  return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function newItemId(prefix: string) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
+console.log("Updated the main site state for the Ethiopian-focused content model.");

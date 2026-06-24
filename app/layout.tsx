@@ -8,7 +8,6 @@ const keywords = [
   "Website Development Ethiopia",
   "Web Design Ethiopia",
   "Software Development Ethiopia",
-  "Web Development East Africa",
   "Digital Solutions Ethiopia",
   "Business Website Ethiopia"
 ];
@@ -17,11 +16,11 @@ const keywords = [
 export const metadata = {
   metadataBase: new URL("https://clasolutions.africa"),
   title: {
-    default: "CLA Solutions | Website Development Ethiopia & East Africa",
+    default: "CLA Solutions | Website Development Ethiopia",
     template: "%s | CLA Solutions"
   },
   description:
-    "CLA Solutions helps Ethiopian and East African businesses grow through premium websites, web applications, e-commerce, SEO, and digital transformation.",
+    "CLA Solutions helps Ethiopian businesses grow through premium websites, web applications, e-commerce, SEO, and digital transformation.",
   keywords,
   authors: [{ name: "CLA Solutions" }],
   creator: "CLA Solutions",
@@ -31,9 +30,9 @@ export const metadata = {
     apple: "/icon.png"
   },
   openGraph: {
-    title: "CLA Solutions | Digital Innovation for African Businesses",
+    title: "CLA Solutions | Digital Innovation for Ethiopian Businesses",
     description:
-      "Professional websites, web apps, e-commerce, SEO, and support for Ethiopia and East Africa.",
+      "Professional websites, web apps, e-commerce, SEO, and support for Ethiopian businesses.",
     url: "https://clasolutions.africa",
     siteName: "CLA Solutions",
     locale: "en_US",
@@ -56,9 +55,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     "@type": "ProfessionalService",
     name: "CLA Solutions",
     url: "https://clasolutions.africa",
-    email: "hello@clasolutions.africa",
-    areaServed: ["Ethiopia", "East Africa"],
-    slogan: "Transforming African Businesses Through Digital Innovation",
+    email: "yaredwondwossen@gmail.com",
+    areaServed: "Ethiopia",
+    slogan: "Transforming Ethiopian Businesses Through Digital Innovation",
     serviceType: [
       "Website Development",
       "E-Commerce Solutions",

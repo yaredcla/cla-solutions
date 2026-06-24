@@ -14,6 +14,7 @@ import {
   CirclePause,
   CirclePlay,
   Eye,
+  FileText,
   Globe2,
   Image as ImageIcon,
   KeyRound,
@@ -29,13 +30,16 @@ import {
   Sparkles,
   Trash2,
   UserPlus,
-  UserRound
+  UserRound,
+  UsersRound
 } from "lucide-react";
 import {
   AnalyticsSummary,
   AdminStatus,
+  EditableBlogPost,
   EditablePortfolio,
   EditableService,
+  EditableTeamMember,
   InboxMessage,
   PublicAdminAccount,
   SiteState,
@@ -43,11 +47,22 @@ import {
   newItemId
 } from "@/lib/site-state";
 
-type TabId = "overview" | "content" | "services" | "work" | "inbox" | "analytics" | "accounts";
+type TabId = "overview" | "content" | "sections" | "services" | "work" | "inbox" | "analytics" | "accounts";
+type CollectionKey =
+  | "trustSignals"
+  | "features"
+  | "heroStats"
+  | "heroHighlights"
+  | "growthMetrics"
+  | "performanceMetrics"
+  | "process"
+  | "testimonials"
+  | "faqs";
 
 const nav = [
   { label: "Overview", icon: LayoutDashboard, id: "overview" as const },
   { label: "Content", icon: Globe2, id: "content" as const },
+  { label: "Sections", icon: FileText, id: "sections" as const },
   { label: "Services", icon: Building2, id: "services" as const },
   { label: "Work", icon: Eye, id: "work" as const },
   { label: "Inbox", icon: Mail, id: "inbox" as const },
@@ -71,6 +86,24 @@ const emptyPortfolio = (): EditablePortfolio => ({
   result: "",
   websiteUrl: "",
   logoUrl: ""
+});
+
+const emptyBlogPost = (): EditableBlogPost => ({
+  id: "",
+  title: "",
+  category: "",
+  readTime: "",
+  excerpt: "",
+  url: ""
+});
+
+const emptyTeamMember = (): EditableTeamMember => ({
+  id: "",
+  name: "",
+  role: "",
+  description: "",
+  specialties: ["", "", ""],
+  imageUrl: ""
 });
 
 const emptyAdminDraft = () => ({
@@ -146,6 +179,8 @@ export default function AdminDashboard() {
   const [accountDraft, setAccountDraft] = useState(emptyAdminDraft());
   const [serviceDraft, setServiceDraft] = useState<EditableService>(emptyService());
   const [portfolioDraft, setPortfolioDraft] = useState<EditablePortfolio>(emptyPortfolio());
+  const [blogDraft, setBlogDraft] = useState<EditableBlogPost>(emptyBlogPost());
+  const [teamDraft, setTeamDraft] = useState<EditableTeamMember>(emptyTeamMember());
 
   async function loadDashboard() {
     setLoading(true);
@@ -288,6 +323,24 @@ export default function AdminDashboard() {
     setSiteState((current) => ({ ...current, settings: { ...current.settings, [key]: value } }));
   }
 
+  function updateCollectionItem<K extends CollectionKey>(
+    key: K,
+    id: string,
+    patch: Partial<SiteState[K][number]>
+  ) {
+    setSiteState((current) => ({
+      ...current,
+      [key]: current[key].map((item) => item.id === id ? { ...item, ...patch } : item)
+    }));
+  }
+
+  function removeCollectionItem<K extends CollectionKey>(key: K, id: string) {
+    setSiteState((current) => ({
+      ...current,
+      [key]: current[key].filter((item) => item.id !== id)
+    }));
+  }
+
   async function saveServiceDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextService = {
@@ -340,6 +393,50 @@ export default function AdminDashboard() {
 
   async function removePortfolio(id: string) {
     await saveSiteState({ ...siteState, portfolio: siteState.portfolio.filter((item) => item.id !== id) });
+  }
+
+  async function saveBlogDraft(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextBlog = { ...blogDraft, url: blogDraft.url?.trim() || undefined };
+    if (!nextBlog.id) {
+      nextBlog.id = newItemId("blog");
+      await saveSiteState({ ...siteState, blogPosts: [nextBlog, ...siteState.blogPosts] });
+    } else {
+      await saveSiteState({
+        ...siteState,
+        blogPosts: siteState.blogPosts.map((post) => post.id === nextBlog.id ? nextBlog : post)
+      });
+    }
+    setBlogDraft(emptyBlogPost());
+  }
+
+  async function removeBlog(id: string) {
+    await saveSiteState({ ...siteState, blogPosts: siteState.blogPosts.filter((post) => post.id !== id) });
+    if (blogDraft.id === id) setBlogDraft(emptyBlogPost());
+  }
+
+  async function saveTeamDraft(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextMember = {
+      ...teamDraft,
+      specialties: teamDraft.specialties.map((item) => item.trim()).filter(Boolean),
+      imageUrl: teamDraft.imageUrl?.trim() || undefined
+    };
+    if (!nextMember.id) {
+      nextMember.id = newItemId("team");
+      await saveSiteState({ ...siteState, team: [nextMember, ...siteState.team] });
+    } else {
+      await saveSiteState({
+        ...siteState,
+        team: siteState.team.map((member) => member.id === nextMember.id ? nextMember : member)
+      });
+    }
+    setTeamDraft(emptyTeamMember());
+  }
+
+  async function removeTeamMember(id: string) {
+    await saveSiteState({ ...siteState, team: siteState.team.filter((member) => member.id !== id) });
+    if (teamDraft.id === id) setTeamDraft(emptyTeamMember());
   }
 
   async function saveSettings(event: FormEvent<HTMLFormElement>) {
@@ -615,8 +712,30 @@ export default function AdminDashboard() {
                       ["phone", "Phone"],
                       ["location", "Location"],
                       ["whatsapp", "WhatsApp number"],
+                      ["telegram", "Telegram URL"],
+                      ["linkedin", "LinkedIn URL"],
+                      ["instagram", "Instagram URL"],
+                      ["facebook", "Facebook URL"],
                       ["seoTitle", "SEO title"],
-                      ["seoDescription", "SEO description"]
+                      ["seoDescription", "SEO description"],
+                      ["servicesTitle", "Services heading"],
+                      ["servicesCopy", "Services description"],
+                      ["whyEyebrow", "Why choose us label"],
+                      ["whyTitle", "Why choose us heading"],
+                      ["whyCopy", "Why choose us description"],
+                      ["portfolioTitle", "Portfolio heading"],
+                      ["portfolioCopy", "Portfolio description"],
+                      ["processTitle", "Process heading"],
+                      ["processCopy", "Process description"],
+                      ["testimonialsTitle", "Testimonials heading"],
+                      ["testimonialsCopy", "Testimonials description"],
+                      ["faqTitle", "FAQ heading"],
+                      ["blogTitle", "Blog heading"],
+                      ["aboutTitle", "About/team heading"],
+                      ["aboutCopy", "About/team description"],
+                      ["ctaTitle", "Call-to-action heading"],
+                      ["ctaCopy", "Call-to-action description"],
+                      ["contactTitle", "Contact heading"]
                     ].map(([key, label]) => (
                       <label key={key} className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                         {label}
@@ -649,6 +768,225 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </Card>
+              </section>
+            ) : null}
+
+            {activeTab === "sections" ? (
+              <section className="grid gap-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-black">Homepage Sections</h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Manage the structured content shown across the public website.</p>
+                  </div>
+                  <button type="button" onClick={() => saveSiteState(siteState)} className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-blue-700">
+                    <Save size={17} /> Save section changes
+                  </button>
+                </div>
+
+                <section className="grid gap-6 xl:grid-cols-2">
+                  <Card>
+                    <SectionTitle title="Blog editor" copy="Create and update the posts shown in Blog preview." />
+                    <form onSubmit={saveBlogDraft} className="mt-6 grid gap-3">
+                      {[
+                        ["title", "Title"],
+                        ["category", "Category"],
+                        ["readTime", "Read time"],
+                        ["url", "Article URL"]
+                      ].map(([key, label]) => (
+                        <label key={key} className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                          {label}
+                          <input
+                            value={String(blogDraft[key as keyof EditableBlogPost] ?? "")}
+                            onChange={(event) => setBlogDraft((current) => ({ ...current, [key]: event.target.value }))}
+                            className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white"
+                          />
+                        </label>
+                      ))}
+                      <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Excerpt
+                        <textarea rows={4} value={blogDraft.excerpt} onChange={(event) => setBlogDraft((current) => ({ ...current, excerpt: event.target.value }))} className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white" />
+                      </label>
+                      <div className="flex gap-2">
+                        <button type="submit" className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-bold text-white"><Plus size={16} /> Save post</button>
+                        <button type="button" onClick={() => setBlogDraft(emptyBlogPost())} className="rounded-md border border-slate-200 px-4 py-3 text-sm font-bold dark:border-white/10">Clear</button>
+                      </div>
+                    </form>
+                    <div className="mt-6 grid gap-3">
+                      {siteState.blogPosts.map((post) => (
+                        <div key={post.id} className="rounded-md bg-slate-50 p-4 dark:bg-slate-900">
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand dark:text-cyan">{post.category}</p>
+                          <p className="mt-1 font-bold">{post.title}</p>
+                          <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{post.readTime}</p>
+                          <div className="mt-3 flex gap-2">
+                            <button type="button" onClick={() => setBlogDraft({ ...post, url: post.url ?? "" })} className="rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Edit blog post"><PencilLine size={16} /></button>
+                            <button type="button" onClick={() => removeBlog(post.id)} className="rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete blog post"><Trash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <Card>
+                    <SectionTitle title="Team editor" copy="Add team photos, biographies, roles, and specialties." />
+                    <form onSubmit={saveTeamDraft} className="mt-6 grid gap-3">
+                      {[
+                        ["name", "Name"],
+                        ["role", "Role"],
+                        ["imageUrl", "Photo URL"]
+                      ].map(([key, label]) => (
+                        <label key={key} className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                          {label}
+                          <input
+                            value={String(teamDraft[key as keyof EditableTeamMember] ?? "")}
+                            onChange={(event) => setTeamDraft((current) => ({ ...current, [key]: event.target.value }))}
+                            className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white"
+                          />
+                        </label>
+                      ))}
+                      <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Description
+                        <textarea rows={4} value={teamDraft.description} onChange={(event) => setTeamDraft((current) => ({ ...current, description: event.target.value }))} className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white" />
+                      </label>
+                      {teamDraft.specialties.map((specialty, index) => (
+                        <div key={index} className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Specialty {index + 1}</span>
+                          <div className="flex gap-2">
+                            <input value={specialty} onChange={(event) => setTeamDraft((current) => {
+                              const specialties = [...current.specialties];
+                              specialties[index] = event.target.value;
+                              return { ...current, specialties };
+                            })} className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white" />
+                            <button type="button" onClick={() => setTeamDraft((current) => ({ ...current, specialties: current.specialties.filter((_, itemIndex) => itemIndex !== index) }))} className="rounded-md border border-slate-200 p-3 dark:border-white/10" aria-label="Remove specialty"><Trash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setTeamDraft((current) => ({ ...current, specialties: [...current.specialties, ""] }))} className="inline-flex w-fit items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-bold dark:border-white/10"><Plus size={15} /> Add specialty</button>
+                      <div className="flex gap-2">
+                        <button type="submit" className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-bold text-white"><UsersRound size={16} /> Save member</button>
+                        <button type="button" onClick={() => setTeamDraft(emptyTeamMember())} className="rounded-md border border-slate-200 px-4 py-3 text-sm font-bold dark:border-white/10">Clear</button>
+                      </div>
+                    </form>
+                    <div className="mt-6 grid gap-3">
+                      {siteState.team.map((member) => (
+                        <div key={member.id} className="rounded-md bg-slate-50 p-4 dark:bg-slate-900">
+                          <p className="font-bold">{member.name}</p>
+                          <p className="text-sm text-brand dark:text-cyan">{member.role}</p>
+                          <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{member.specialties.join(" / ")}</p>
+                          <div className="mt-3 flex gap-2">
+                            <button type="button" onClick={() => setTeamDraft({ ...member, specialties: [...member.specialties, "", "", ""].slice(0, 3), imageUrl: member.imageUrl ?? "" })} className="rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Edit team member"><PencilLine size={16} /></button>
+                            <button type="button" onClick={() => removeTeamMember(member.id)} className="rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete team member"><Trash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </section>
+
+                <section className="grid gap-6 xl:grid-cols-2">
+                  <Card>
+                    <SectionTitle title="Trust points and advantages" copy="Edit, add, or remove the short selling points on the homepage." />
+                    {(["trustSignals", "features"] as const).map((key) => (
+                      <div key={key} className="mt-6">
+                        <h3 className="font-bold">{key === "trustSignals" ? "Trust strip" : "Why choose us points"}</h3>
+                        <div className="mt-3 grid gap-2">
+                          {siteState[key].map((item) => (
+                            <div key={item.id} className="flex gap-2">
+                              <input value={item.label} onChange={(event) => updateCollectionItem(key, item.id, { label: event.target.value })} className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-900" />
+                              <button type="button" onClick={() => removeCollectionItem(key, item.id)} className="rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete item"><Trash2 size={16} /></button>
+                            </div>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => setSiteState((current) => ({ ...current, [key]: [...current[key], { id: newItemId(key), label: "New item" }] }))} className="mt-3 inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-bold dark:border-white/10"><Plus size={15} /> Add item</button>
+                      </div>
+                    ))}
+                  </Card>
+
+                  <Card>
+                    <SectionTitle title="Hero and dashboard figures" copy="Control the public statistics, highlights, and percentage scores." />
+                    {(["heroStats", "heroHighlights", "growthMetrics", "performanceMetrics"] as const).map((key) => (
+                      <div key={key} className="mt-6">
+                        <h3 className="font-bold">{key.replace(/([A-Z])/g, " $1")}</h3>
+                        <div className="mt-3 grid gap-3">
+                          {siteState[key].map((item) => (
+                            <div key={item.id} className="grid gap-2 rounded-md bg-slate-50 p-3 dark:bg-slate-900 sm:grid-cols-[0.7fr_1fr_auto]">
+                              <input value={item.value} onChange={(event) => updateCollectionItem(key, item.id, { value: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950" />
+                              <input value={item.label} onChange={(event) => updateCollectionItem(key, item.id, { label: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950" />
+                              <button type="button" onClick={() => removeCollectionItem(key, item.id)} className="rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete metric"><Trash2 size={16} /></button>
+                              {"description" in item ? (
+                                <textarea value={item.description ?? ""} onChange={(event) => updateCollectionItem(key, item.id, { description: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950 sm:col-span-3" />
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSiteState((current) => ({
+                            ...current,
+                            [key]: [
+                              ...current[key],
+                              {
+                                id: newItemId(key),
+                                value: key === "growthMetrics" ? "0" : "New",
+                                label: "New metric",
+                                ...(key === "performanceMetrics" ? { description: "Describe this metric" } : {})
+                              }
+                            ]
+                          }))}
+                          className="mt-3 inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-bold dark:border-white/10"
+                        >
+                          <Plus size={15} /> Add metric
+                        </button>
+                      </div>
+                    ))}
+                  </Card>
+                </section>
+
+                <section className="grid gap-6 xl:grid-cols-3">
+                  <Card>
+                    <SectionTitle title="Process" copy="Manage the steps from discovery to growth." />
+                    <div className="mt-5 grid gap-3">
+                      {siteState.process.map((step) => (
+                        <div key={step.id} className="grid gap-2 rounded-md bg-slate-50 p-3 dark:bg-slate-900">
+                          <input value={step.title} onChange={(event) => updateCollectionItem("process", step.id, { title: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-slate-950" />
+                          <textarea value={step.description} onChange={(event) => updateCollectionItem("process", step.id, { description: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950" />
+                          <button type="button" onClick={() => removeCollectionItem("process", step.id)} className="w-fit rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete process step"><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setSiteState((current) => ({ ...current, process: [...current.process, { id: newItemId("process"), title: "New step", description: "Describe this step" }] }))} className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-bold dark:border-white/10"><Plus size={15} /> Add step</button>
+                    </div>
+                  </Card>
+
+                  <Card>
+                    <SectionTitle title="Testimonials" copy="Create, edit, and remove client feedback." />
+                    <div className="mt-5 grid gap-3">
+                      {siteState.testimonials.map((item) => (
+                        <div key={item.id} className="grid gap-2 rounded-md bg-slate-50 p-3 dark:bg-slate-900">
+                          {(["name", "role", "company"] as const).map((field) => (
+                            <input key={field} value={item[field]} onChange={(event) => updateCollectionItem("testimonials", item.id, { [field]: event.target.value })} placeholder={field} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950" />
+                          ))}
+                          <textarea value={item.quote} onChange={(event) => updateCollectionItem("testimonials", item.id, { quote: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950" />
+                          <button type="button" onClick={() => removeCollectionItem("testimonials", item.id)} className="w-fit rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete testimonial"><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setSiteState((current) => ({ ...current, testimonials: [...current.testimonials, { id: newItemId("testimonial"), name: "Client name", role: "Role", company: "Company", quote: "Client feedback" }] }))} className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-bold dark:border-white/10"><Plus size={15} /> Add testimonial</button>
+                    </div>
+                  </Card>
+
+                  <Card>
+                    <SectionTitle title="FAQs" copy="Manage common questions and answers." />
+                    <div className="mt-5 grid gap-3">
+                      {siteState.faqs.map((faq) => (
+                        <div key={faq.id} className="grid gap-2 rounded-md bg-slate-50 p-3 dark:bg-slate-900">
+                          <input value={faq.question} onChange={(event) => updateCollectionItem("faqs", faq.id, { question: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-slate-950" />
+                          <textarea value={faq.answer} onChange={(event) => updateCollectionItem("faqs", faq.id, { answer: event.target.value })} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-950" />
+                          <button type="button" onClick={() => removeCollectionItem("faqs", faq.id)} className="w-fit rounded-md border border-slate-200 p-2 dark:border-white/10" aria-label="Delete FAQ"><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setSiteState((current) => ({ ...current, faqs: [...current.faqs, { id: newItemId("faq"), question: "New question", answer: "New answer" }] }))} className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-bold dark:border-white/10"><Plus size={15} /> Add FAQ</button>
+                    </div>
+                  </Card>
+                </section>
+                {saving ? <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{saving}</p> : null}
               </section>
             ) : null}
 

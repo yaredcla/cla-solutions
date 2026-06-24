@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSessionToken, hashPassword, normalizeUsername } from "@/lib/admin-auth";
+import { adminCookieOptions, createSessionToken, hashPassword, normalizeUsername } from "@/lib/admin-auth";
 import { getAdminFromRequest, ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
 import { readAdminUsers, saveAdminUsers } from "@/lib/data-store";
 import type { AdminAccount } from "@/lib/site-state";
@@ -57,12 +57,6 @@ export async function POST(request: Request) {
 
   await saveAdminUsers([nextUser, ...users]);
   const response = NextResponse.json(toPublicAdmin(nextUser), { status: 201 });
-  response.cookies.set(ADMIN_SESSION_COOKIE, createSessionToken(admin.id), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7
-  });
+  response.cookies.set(ADMIN_SESSION_COOKIE, createSessionToken(admin.id), adminCookieOptions());
   return response;
 }

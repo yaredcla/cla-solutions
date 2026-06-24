@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { appendMessage, readMessages } from "@/lib/data-store";
 import { newMessageId } from "@/lib/site-state";
+import { getAdminFromRequest } from "@/lib/admin-session";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const admin = await getAdminFromRequest(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const messages = await readMessages();
   return NextResponse.json(messages);
 }
@@ -23,6 +28,9 @@ export async function POST(request: Request) {
 
   if (!message.name || !message.email || !message.message) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+  if (message.name.length > 120 || message.email.length > 254 || message.message.length > 5000) {
+    return NextResponse.json({ error: "One or more fields are too long." }, { status: 400 });
   }
 
   await appendMessage(message);

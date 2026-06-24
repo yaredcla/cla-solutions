@@ -1,16 +1,15 @@
 import { neon } from "@neondatabase/serverless";
-import { hashPassword, normalizeUsername } from "./admin-auth";
+import { normalizeUsername } from "./admin-auth";
 import {
   AnalyticsSummary,
   AdminAccount,
   defaultSiteState,
   InboxMessage,
+  normalizeSiteState,
   SiteState
 } from "./site-state";
 
 const SITE_STATE_ID = "main";
-
-let schemaReady: Promise<void> | null = null;
 
 function getSql() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -59,94 +58,16 @@ function toInboxMessage(row: Record<string, unknown>): InboxMessage {
   };
 }
 
-async function ensureSchema() {
-  if (schemaReady) return schemaReady;
-
-  schemaReady = (async () => {
-    const sql = getSql();
-    await sql`
-      create table if not exists schema_migrations (
-        version text primary key,
-        applied_at timestamptz not null default now()
-      )
-    `;
-    await sql`
-      create table if not exists site_state (
-        id text primary key,
-        data jsonb not null,
-        updated_at timestamptz not null default now()
-      )
-    `;
-    await sql`
-      create table if not exists messages (
-        id text primary key,
-        name text not null,
-        company text not null default '',
-        email text not null,
-        phone text not null default '',
-        service text not null default '',
-        message text not null,
-        status text not null default 'new',
-        created_at timestamptz not null default now(),
-        constraint messages_status_check check (status in ('new', 'read', 'replied', 'archived'))
-      )
-    `;
-    await sql`create index if not exists messages_created_at_idx on messages (created_at desc)`;
-    await sql`create index if not exists messages_status_idx on messages (status)`;
-    await sql`
-      create table if not exists admin_users (
-        id text primary key,
-        username text not null unique,
-        password_hash text not null,
-        status text not null default 'active',
-        created_at timestamptz not null default now(),
-        updated_at timestamptz not null default now(),
-        last_login_at timestamptz,
-        constraint admin_users_status_check check (status in ('active', 'paused'))
-      )
-    `;
-    await sql`create index if not exists admin_users_username_idx on admin_users (username)`;
-    await seedDefaults();
-  })();
-
-  return schemaReady;
-}
-
-async function seedDefaults() {
-  const sql = getSql();
-  const createdAt = new Date(2026, 0, 1).toISOString();
-
-  await sql`
-    insert into site_state (id, data, updated_at)
-    values (${SITE_STATE_ID}, ${JSON.stringify(defaultSiteState)}::jsonb, now())
-    on conflict (id) do nothing
-  `;
-
-  await sql`
-    insert into admin_users (id, username, password_hash, status, created_at, updated_at)
-    values (
-      'admin_seed',
-      ${normalizeUsername("admin")},
-      ${hashPassword("admin12345")},
-      'active',
-      ${createdAt},
-      ${createdAt}
-    )
-    on conflict (username) do nothing
-  `;
-}
-
 export async function readSiteState(): Promise<SiteState> {
-  await ensureSchema();
   const sql = getSql();
   const rows = await sql`select data from site_state where id = ${SITE_STATE_ID}`;
   const data = rows[0]?.data;
   if (!data) return defaultSiteState;
-  return typeof data === "string" ? JSON.parse(data) as SiteState : data as SiteState;
+  const parsed = typeof data === "string" ? JSON.parse(data) as SiteState : data as SiteState;
+  return normalizeSiteState(parsed);
 }
 
 export async function saveSiteState(state: SiteState): Promise<SiteState> {
-  await ensureSchema();
   const sql = getSql();
   await sql`
     insert into site_state (id, data, updated_at)
@@ -159,7 +80,6 @@ export async function saveSiteState(state: SiteState): Promise<SiteState> {
 }
 
 export async function readMessages(): Promise<InboxMessage[]> {
-  await ensureSchema();
   const sql = getSql();
   const rows = await sql`
     select id, name, company, email, phone, service, message, status, created_at
@@ -170,7 +90,6 @@ export async function readMessages(): Promise<InboxMessage[]> {
 }
 
 export async function saveMessages(messages: InboxMessage[]): Promise<InboxMessage[]> {
-  await ensureSchema();
   const sql = getSql();
   await sql`delete from messages`;
   if (!messages.length) return messages;
@@ -197,7 +116,6 @@ export async function saveMessages(messages: InboxMessage[]): Promise<InboxMessa
 }
 
 export async function appendMessage(message: InboxMessage): Promise<InboxMessage> {
-  await ensureSchema();
   const sql = getSql();
   await sql`
     insert into messages (id, name, company, email, phone, service, message, status, created_at)
@@ -217,7 +135,6 @@ export async function appendMessage(message: InboxMessage): Promise<InboxMessage
 }
 
 export async function updateMessage(id: string, patch: Partial<InboxMessage>): Promise<InboxMessage | null> {
-  await ensureSchema();
   const messages = await readMessages();
   const current = messages.find((item) => item.id === id);
   if (!current) return null;
@@ -239,7 +156,6 @@ export async function updateMessage(id: string, patch: Partial<InboxMessage>): P
 }
 
 export async function deleteMessage(id: string): Promise<boolean> {
-  await ensureSchema();
   const sql = getSql();
   const rows = await sql`delete from messages where id = ${id} returning id`;
   return rows.length > 0;
@@ -277,7 +193,6 @@ export async function getAnalytics(): Promise<AnalyticsSummary> {
 }
 
 export async function readAdminUsers(): Promise<AdminAccount[]> {
-  await ensureSchema();
   const sql = getSql();
   const rows = await sql`
     select id, username, password_hash, status, created_at, updated_at, last_login_at
@@ -288,7 +203,6 @@ export async function readAdminUsers(): Promise<AdminAccount[]> {
 }
 
 export async function saveAdminUsers(users: AdminAccount[]): Promise<AdminAccount[]> {
-  await ensureSchema();
   const sql = getSql();
   await sql`delete from admin_users`;
   if (!users.length) return users;
@@ -313,7 +227,6 @@ export async function saveAdminUsers(users: AdminAccount[]): Promise<AdminAccoun
 }
 
 export async function upsertAdminUser(user: AdminAccount): Promise<AdminAccount> {
-  await ensureSchema();
   const sql = getSql();
   const normalizedUsername = normalizeUsername(user.username);
   await sql`
@@ -338,7 +251,6 @@ export async function upsertAdminUser(user: AdminAccount): Promise<AdminAccount>
 }
 
 export async function findAdminUserByUsername(username: string) {
-  await ensureSchema();
   const sql = getSql();
   const rows = await sql`
     select id, username, password_hash, status, created_at, updated_at, last_login_at
@@ -350,7 +262,6 @@ export async function findAdminUserByUsername(username: string) {
 }
 
 export async function findAdminUserById(id: string) {
-  await ensureSchema();
   const sql = getSql();
   const rows = await sql`
     select id, username, password_hash, status, created_at, updated_at, last_login_at
