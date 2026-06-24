@@ -1,0 +1,132 @@
+{
+  "settings": {
+    "companyName": "CLA Solutions",
+    "tagline": "Transforming African Businesses Through Digital Innovation",
+    "heroTitle": "Professional Websites That Grow Your Business",
+    "heroSubtitle": "We help Ethiopian and East African businesses attract more customers, build trust, and increase revenue through modern digital solutions.",
+    "ctaPrimary": "Get Free Consultation",
+    "ctaSecondary": "View Our Work",
+    "phone": "+251994184777",
+    "email": "yared.wondwossen5@gmail.com",
+    "location": "Serving Ethiopia & East Africa ,addis ababa, ETH.",
+    "whatsapp": "+251994184777",
+    "seoTitle": "CLA Solutions | Website Development Ethiopia & East Africa | Addis Ababa, ETH",
+    "seoDescription": "CLA Solutions helps Ethiopian and East African businesses grow through premium websites, web applications, e-commerce, SEO, and digital transformation."
+  },
+  "services": [
+    {
+      "id": "website-development",
+      "title": "Website Development",
+      "description": "Premium business sites, corporate platforms, and landing pages built for credibility and conversion.",
+      "bullets": [
+        "Business websites",
+        "Corporate websites",
+        "Landing pages"
+      ]
+    },
+    {
+      "id": "ecommerce-solutions",
+      "title": "E-Commerce Solutions",
+      "description": "Online stores with product management, local payment readiness, and performance-first storefronts.",
+      "bullets": [
+        "Online stores",
+        "Payment integration",
+        "Product management"
+      ]
+    },
+    {
+      "id": "web-applications",
+      "title": "Web Applications",
+      "description": "Custom dashboards and management systems that streamline everyday operations.",
+      "bullets": [
+        "Custom systems",
+        "Dashboards",
+        "Management platforms"
+      ]
+    }
+  ],
+  "portfolio": [
+    {
+      "id": "work_1781590512734_sj23g5",
+      "title": "Hani-Buys",
+      "type": "E-commerce Website For Ethiopia",
+      "description": "E-commerce platform connecting shoppers with trusted vendors across multiple categories.",
+      "stack": [
+        "Git Hub",
+        "Vs code",
+        "base 44 AI tool"
+      ],
+      "result": "maximizing profit in local markets",
+      "websiteUrl": "https://hani-market-hub.base44.app/",
+      "logoUrl": "/hani.jpeg"
+    },
+    {
+      "id": "hotel-booking-website",
+      "title": "Gym Subscription Web",
+      "type": "Health and Fitness",
+      "description": "QR-Code based Gym Registration Web App                            \n",
+      "stack": [
+        "Next.js",
+        "CMS",
+        "SEO"
+      ],
+      "result": "100% customer satisfaction",
+      "websiteUrl": "https://sucessgym.yegnarideservice.com/",
+      "logoUrl": "/logo.jpeg"
+    },
+    {
+      "id": "real-estate-platform",
+      "title": "Real Estate Platform | Urban Rent",
+      "type": "Website",
+      "description": "Property listings, lead capture, and agent workflows for a growing Addis Ababa brokerage.",
+      "stack": [
+        "React",
+        "Maps",
+        "CRM"
+      ],
+      "result": "3x faster lead follow-up",
+      "websiteUrl": "https://urban-rent-42e6.vercel.app/",
+      "logoUrl": "/urban.jpeg"
+    }
+  ],
+  "testimonials": [
+    {
+      "id": "testimonial-1",
+      "quote": "CLA Solutions turned our outdated website into a real sales asset. The team understood our market and moved quickly.",
+      "name": "Mekdes Alemu",
+      "role": "Managing Director",
+      "company": "Blue Nile Hospitality"
+    },
+    {
+      "id": "testimonial-2",
+      "quote": "Our new platform made it easier for clients to browse properties and contact agents. The design feels international.",
+      "name": "Daniel Kato",
+      "role": "Founder",
+      "company": "Savanna Realty"
+    },
+    {
+      "id": "testimonial-3",
+      "quote": "They gave us the structure, speed, and support we needed to launch online without overwhelming our team.",
+      "name": "Amina Yusuf",
+      "role": "Operations Lead",
+      "company": "EastLink Foods"
+    }
+  ],
+  "faqs": [
+    {
+      "id": "faq-1",
+      "question": "How long does a business website take?",
+      "answer": "Most focused business websites launch in 2 to 4 weeks, depending on content readiness and review speed."
+    },
+    {
+      "id": "faq-2",
+      "question": "Can you support payment and WhatsApp workflows?",
+      "answer": "Yes. We design around regional customer behavior, including WhatsApp contact, lead forms, payment readiness, and handoff workflows."
+    },
+    {
+      "id": "faq-3",
+      "question": "Do you provide ongoing maintenance?",
+      "answer": "Yes. Maintenance plans can include updates, monitoring, backups, security checks, SEO improvements, and content support."
+    }
+  ]
+}
