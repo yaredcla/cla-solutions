@@ -27,6 +27,12 @@ const next = {
     linkedin: "https://www.linkedin.com/in/yared-wondwossen-8425a4377",
     instagram: "https://www.instagram.com/?hl=en",
     facebook: "https://web.facebook.com/yared.wondwosone",
+    logoPath: current.settings?.logoPath ?? "",
+    introVideoEnabled: Boolean(current.settings?.introVideoEnabled),
+    introVideoTitle: current.settings?.introVideoTitle ?? "",
+    introVideoDescription: current.settings?.introVideoDescription ?? "",
+    introVideoPath: current.settings?.introVideoPath ?? "",
+    introVideoThumbnailPath: current.settings?.introVideoThumbnailPath ?? "",
     seoTitle: "CLA Solutions | Website Development Ethiopia",
     seoDescription:
       "CLA Solutions helps Ethiopian businesses grow through premium websites, web applications, e-commerce, SEO, and digital transformation.",

@@ -13,6 +13,12 @@ export type SiteSettings = {
   linkedin: string;
   instagram: string;
   facebook: string;
+  logoPath: string;
+  introVideoEnabled: boolean;
+  introVideoTitle: string;
+  introVideoDescription: string;
+  introVideoPath: string;
+  introVideoThumbnailPath: string;
   seoTitle: string;
   seoDescription: string;
   servicesTitle: string;
@@ -174,6 +180,12 @@ export const defaultSiteState: SiteState = {
     linkedin: "https://www.linkedin.com/in/yared-wondwossen-8425a4377",
     instagram: "https://www.instagram.com/?hl=en",
     facebook: "https://web.facebook.com/yared.wondwosone",
+    logoPath: "",
+    introVideoEnabled: false,
+    introVideoTitle: "",
+    introVideoDescription: "",
+    introVideoPath: "",
+    introVideoThumbnailPath: "",
     seoTitle: "CLA Solutions | Website Development Ethiopia",
     seoDescription:
       "CLA Solutions helps Ethiopian businesses grow through premium websites, web applications, e-commerce, SEO, and digital transformation.",

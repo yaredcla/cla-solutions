@@ -47,7 +47,10 @@ import {
   newItemId
 } from "@/lib/site-state";
 
-type TabId = "overview" | "content" | "sections" | "services" | "work" | "inbox" | "analytics" | "accounts";
+type TabId = "overview" | "content" | "branding" | "sections" | "services" | "work" | "inbox" | "analytics" | "accounts";
+type StringSettingKey = {
+  [Key in keyof SiteState["settings"]]: SiteState["settings"][Key] extends string ? Key : never;
+}[keyof SiteState["settings"]];
 type CollectionKey =
   | "trustSignals"
   | "features"
@@ -62,12 +65,50 @@ type CollectionKey =
 const nav = [
   { label: "Overview", icon: LayoutDashboard, id: "overview" as const },
   { label: "Content", icon: Globe2, id: "content" as const },
+  { label: "Branding", icon: ImageIcon, id: "branding" as const },
   { label: "Sections", icon: FileText, id: "sections" as const },
   { label: "Services", icon: Building2, id: "services" as const },
   { label: "Work", icon: Eye, id: "work" as const },
   { label: "Inbox", icon: Mail, id: "inbox" as const },
   { label: "Analytics", icon: BarChart3, id: "analytics" as const },
   { label: "Accounts", icon: UserRound, id: "accounts" as const }
+];
+
+const contentSettingFields: Array<[StringSettingKey, string]> = [
+  ["companyName", "Company name"],
+  ["tagline", "Tagline"],
+  ["heroTitle", "Hero title"],
+  ["heroSubtitle", "Hero subtitle"],
+  ["ctaPrimary", "Primary CTA"],
+  ["ctaSecondary", "Secondary CTA"],
+  ["email", "Email"],
+  ["phone", "Phone"],
+  ["location", "Location"],
+  ["whatsapp", "WhatsApp number"],
+  ["telegram", "Telegram URL"],
+  ["linkedin", "LinkedIn URL"],
+  ["instagram", "Instagram URL"],
+  ["facebook", "Facebook URL"],
+  ["seoTitle", "SEO title"],
+  ["seoDescription", "SEO description"],
+  ["servicesTitle", "Services heading"],
+  ["servicesCopy", "Services description"],
+  ["whyEyebrow", "Why choose us label"],
+  ["whyTitle", "Why choose us heading"],
+  ["whyCopy", "Why choose us description"],
+  ["portfolioTitle", "Portfolio heading"],
+  ["portfolioCopy", "Portfolio description"],
+  ["processTitle", "Process heading"],
+  ["processCopy", "Process description"],
+  ["testimonialsTitle", "Testimonials heading"],
+  ["testimonialsCopy", "Testimonials description"],
+  ["faqTitle", "FAQ heading"],
+  ["blogTitle", "Blog heading"],
+  ["aboutTitle", "About/team heading"],
+  ["aboutCopy", "About/team description"],
+  ["ctaTitle", "Call-to-action heading"],
+  ["ctaCopy", "Call-to-action description"],
+  ["contactTitle", "Contact heading"]
 ];
 
 const emptyService = (): EditableService => ({
@@ -119,6 +160,20 @@ const statusStyles: Record<InboxMessage["status"], string> = {
   replied: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200",
   archived: "bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200"
 };
+
+function isImageReference(value: string) {
+  const source = value.trim();
+  return Boolean(source && (/^\//.test(source) || /^https?:\/\//i.test(source)) && /\.(png|jpe?g|webp|svg)(\?.*)?$/i.test(source));
+}
+
+function isVideoReference(value: string) {
+  const source = value.trim();
+  return Boolean(
+    source &&
+      (((/^\//.test(source) || /^https?:\/\//i.test(source)) && /\.(mp4|webm|ogg)(\?.*)?$/i.test(source)) ||
+        /^https:\/\/(www\.)?youtube\.com\/embed\/[A-Za-z0-9_-]+(\?.*)?$/i.test(source))
+  );
+}
 
 function SectionTitle({ title, copy }: { title: string; copy: string }) {
   return (
@@ -444,6 +499,62 @@ export default function AdminDashboard() {
     await saveSiteState(siteState);
   }
 
+  async function saveLogoSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const logoPath = siteState.settings.logoPath.trim();
+    if (logoPath && !isImageReference(logoPath)) {
+      setSaving("Logo must be a .png, .jpg, .jpeg, .webp, or .svg public path or URL.");
+      return;
+    }
+    await saveSiteState({ ...siteState, settings: { ...siteState.settings, logoPath } });
+  }
+
+  async function clearLogoPath() {
+    await saveSiteState({ ...siteState, settings: { ...siteState.settings, logoPath: "" } });
+  }
+
+  async function saveIntroVideoSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const introVideoPath = siteState.settings.introVideoPath.trim();
+    const introVideoThumbnailPath = siteState.settings.introVideoThumbnailPath.trim();
+    if (siteState.settings.introVideoEnabled && !introVideoPath) {
+      setSaving("Add a video path or disable the intro video section.");
+      return;
+    }
+    if (introVideoPath && !isVideoReference(introVideoPath)) {
+      setSaving("Video must be .mp4, .webm, .ogg, or a YouTube embed URL.");
+      return;
+    }
+    if (introVideoThumbnailPath && !isImageReference(introVideoThumbnailPath)) {
+      setSaving("Thumbnail must be a .png, .jpg, .jpeg, .webp, or .svg public path or URL.");
+      return;
+    }
+    await saveSiteState({
+      ...siteState,
+      settings: {
+        ...siteState.settings,
+        introVideoTitle: siteState.settings.introVideoTitle.trim(),
+        introVideoDescription: siteState.settings.introVideoDescription.trim(),
+        introVideoPath,
+        introVideoThumbnailPath
+      }
+    });
+  }
+
+  async function clearIntroVideo() {
+    await saveSiteState({
+      ...siteState,
+      settings: {
+        ...siteState.settings,
+        introVideoEnabled: false,
+        introVideoTitle: "",
+        introVideoDescription: "",
+        introVideoPath: "",
+        introVideoThumbnailPath: ""
+      }
+    });
+  }
+
   function editAccount(account: PublicAdminAccount) {
     setAccountDraft({
       id: account.id,
@@ -555,9 +666,13 @@ export default function AdminDashboard() {
       <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
         <aside className="border-r border-slate-200 bg-white px-4 py-5 dark:border-white/10 dark:bg-slate-950">
           <Link href="/" className="flex items-center gap-3 rounded-md px-2 py-2">
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-ink text-sm font-black text-white dark:bg-white dark:text-ink">
-              CLA
-            </span>
+            {siteState.settings.logoPath && isImageReference(siteState.settings.logoPath) ? (
+              <img src={siteState.settings.logoPath} alt={`${siteState.settings.companyName} logo`} className="h-10 w-10 rounded-md object-contain" />
+            ) : (
+              <span className="grid h-10 w-10 place-items-center rounded-md bg-ink text-sm font-black text-white dark:bg-white dark:text-ink">
+                CLA
+              </span>
+            )}
             <span>
               <strong className="block text-sm">{siteState.settings.companyName}</strong>
               <span className="block text-xs text-slate-500 dark:text-slate-400">Operations Center</span>
@@ -701,47 +816,12 @@ export default function AdminDashboard() {
                 <Card>
                   <SectionTitle title="Site Settings" copy="Change the text and contact details used across the website." />
                   <form onSubmit={saveSettings} className="mt-6 grid gap-4">
-                    {[
-                      ["companyName", "Company name"],
-                      ["tagline", "Tagline"],
-                      ["heroTitle", "Hero title"],
-                      ["heroSubtitle", "Hero subtitle"],
-                      ["ctaPrimary", "Primary CTA"],
-                      ["ctaSecondary", "Secondary CTA"],
-                      ["email", "Email"],
-                      ["phone", "Phone"],
-                      ["location", "Location"],
-                      ["whatsapp", "WhatsApp number"],
-                      ["telegram", "Telegram URL"],
-                      ["linkedin", "LinkedIn URL"],
-                      ["instagram", "Instagram URL"],
-                      ["facebook", "Facebook URL"],
-                      ["seoTitle", "SEO title"],
-                      ["seoDescription", "SEO description"],
-                      ["servicesTitle", "Services heading"],
-                      ["servicesCopy", "Services description"],
-                      ["whyEyebrow", "Why choose us label"],
-                      ["whyTitle", "Why choose us heading"],
-                      ["whyCopy", "Why choose us description"],
-                      ["portfolioTitle", "Portfolio heading"],
-                      ["portfolioCopy", "Portfolio description"],
-                      ["processTitle", "Process heading"],
-                      ["processCopy", "Process description"],
-                      ["testimonialsTitle", "Testimonials heading"],
-                      ["testimonialsCopy", "Testimonials description"],
-                      ["faqTitle", "FAQ heading"],
-                      ["blogTitle", "Blog heading"],
-                      ["aboutTitle", "About/team heading"],
-                      ["aboutCopy", "About/team description"],
-                      ["ctaTitle", "Call-to-action heading"],
-                      ["ctaCopy", "Call-to-action description"],
-                      ["contactTitle", "Contact heading"]
-                    ].map(([key, label]) => (
+                    {contentSettingFields.map(([key, label]) => (
                       <label key={key} className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                         {label}
                         <input
-                          value={siteState.settings[key as keyof SiteState["settings"]]}
-                          onChange={(event) => setSetting(key as keyof SiteState["settings"], event.target.value)}
+                          value={siteState.settings[key]}
+                          onChange={(event) => setSetting(key, event.target.value)}
                           className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white"
                         />
                       </label>
@@ -767,6 +847,107 @@ export default function AdminDashboard() {
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-200">{siteState.settings.phone}</p>
                     </div>
                   </div>
+                </Card>
+              </section>
+            ) : null}
+
+            {activeTab === "branding" ? (
+              <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+                <Card>
+                  <SectionTitle title="Logo / Branding" copy="Store a logo path or image URL in the database for public website branding." />
+                  <form onSubmit={saveLogoSettings} className="mt-6 grid gap-4">
+                    <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Logo path or URL
+                      <input
+                        value={siteState.settings.logoPath}
+                        onChange={(event) => setSetting("logoPath", event.target.value)}
+                        placeholder="/profile/logo.png"
+                        className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white"
+                      />
+                    </label>
+                    <p className="text-xs leading-5 text-slate-500 dark:text-slate-300">
+                      Place local logos inside the public folder and enter paths like /profile/logo.png, or paste an external image URL.
+                    </p>
+                    <div className="rounded-md bg-slate-50 p-4 dark:bg-slate-900">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand dark:text-cyan">Current logo path</p>
+                      <p className="mt-2 break-all text-sm text-slate-600 dark:text-slate-200">{siteState.settings.logoPath || "No logo set. Public site shows CLA Solutions."}</p>
+                      <div className="mt-4 flex min-h-16 items-center rounded-md border border-dashed border-slate-300 bg-white p-4 dark:border-white/10 dark:bg-slate-950">
+                        {siteState.settings.logoPath && isImageReference(siteState.settings.logoPath) ? (
+                          <img src={siteState.settings.logoPath} alt="Current website logo" className="h-12 max-w-48 object-contain" />
+                        ) : (
+                          <strong className="text-sm">CLA Solutions</strong>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-blue-700">
+                        <Save size={17} /> Save logo
+                      </button>
+                      <button type="button" onClick={clearLogoPath} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:text-slate-200">
+                        <Trash2 size={17} /> Clear logo
+                      </button>
+                    </div>
+                    {saving ? <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{saving}</p> : null}
+                  </form>
+                </Card>
+
+                <Card>
+                  <SectionTitle title="Company Intro Video" copy="Control the compact intro video shown near the homepage hero." />
+                  <form onSubmit={saveIntroVideoSettings} className="mt-6 grid gap-4">
+                    <label className="flex items-center gap-3 rounded-md bg-slate-50 p-3 text-sm font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={siteState.settings.introVideoEnabled}
+                        onChange={(event) => setSetting("introVideoEnabled", event.target.checked)}
+                        className="h-4 w-4 accent-brand"
+                      />
+                      Enable video section
+                    </label>
+                    {[
+                      ["introVideoTitle", "Video title", "Meet CLA Solutions"],
+                      ["introVideoPath", "Video path or URL", "/profile/intro.mp4"],
+                      ["introVideoThumbnailPath", "Thumbnail image path or URL", "/profile/intro-thumbnail.jpg"]
+                    ].map(([key, label, placeholder]) => (
+                      <label key={key} className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        {label}
+                        <input
+                          value={String(siteState.settings[key as keyof SiteState["settings"]] ?? "")}
+                          onChange={(event) => setSetting(key as keyof SiteState["settings"], event.target.value)}
+                          placeholder={placeholder}
+                          className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white"
+                        />
+                      </label>
+                    ))}
+                    <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Video description
+                      <textarea
+                        rows={4}
+                        value={siteState.settings.introVideoDescription}
+                        onChange={(event) => setSetting("introVideoDescription", event.target.value)}
+                        className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-brand dark:border-white/10 dark:bg-slate-900 dark:text-white"
+                      />
+                    </label>
+                    <p className="text-xs leading-5 text-slate-500 dark:text-slate-300">
+                      Place local videos inside the public folder and enter paths like /profile/intro.mp4, or paste a direct video URL.
+                    </p>
+                    <div className="rounded-md bg-slate-50 p-4 dark:bg-slate-900">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand dark:text-cyan">Current video settings</p>
+                      <div className="mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-200">
+                        <p>Status: {siteState.settings.introVideoEnabled ? "Enabled" : "Disabled"}</p>
+                        <p className="break-all">Video: {siteState.settings.introVideoPath || "No video path set"}</p>
+                        <p className="break-all">Thumbnail: {siteState.settings.introVideoThumbnailPath || "No thumbnail set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-blue-700">
+                        <CirclePlay size={17} /> Save video
+                      </button>
+                      <button type="button" onClick={clearIntroVideo} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:text-slate-200">
+                        <Trash2 size={17} /> Clear video
+                      </button>
+                    </div>
+                    {saving ? <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{saving}</p> : null}
+                  </form>
                 </Card>
               </section>
             ) : null}

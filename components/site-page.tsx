@@ -57,6 +57,24 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
   return <div className={className}>{children}</div>;
 }
 
+function isImageReference(value: string | undefined) {
+  const source = value?.trim();
+  return Boolean(source && (/^\//.test(source) || /^https?:\/\//i.test(source)) && /\.(png|jpe?g|webp|svg)(\?.*)?$/i.test(source));
+}
+
+function isVideoReference(value: string | undefined) {
+  const source = value?.trim();
+  return Boolean(
+    source &&
+      ((/^\//.test(source) || /^https?:\/\//i.test(source)) && /\.(mp4|webm|ogg)(\?.*)?$/i.test(source) ||
+        /^https:\/\/(www\.)?youtube\.com\/embed\/[A-Za-z0-9_-]+(\?.*)?$/i.test(source))
+  );
+}
+
+function isYouTubeEmbed(value: string | undefined) {
+  return Boolean(value?.trim().match(/^https:\/\/(www\.)?youtube\.com\/embed\/[A-Za-z0-9_-]+(\?.*)?$/i));
+}
+
 export default function SitePage() {
   const [darkMode, setDarkMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -129,17 +147,24 @@ export default function SitePage() {
   }));
   const highlightIcons = [Globe2, BarChart3, ShieldCheck];
   const trustIcons = [ShieldCheck, ArrowRight, Phone, ExternalLink, Check, Building2];
+  const brandName = siteState.settings.companyName || "CLA Solutions";
+  const logoPath = siteState.settings.logoPath?.trim();
+  const hasLogo = isImageReference(logoPath);
+  const introVideoPath = siteState.settings.introVideoPath?.trim();
+  const introVideoThumbnailPath = siteState.settings.introVideoThumbnailPath?.trim();
+  const showIntroVideo = siteState.settings.introVideoEnabled && isVideoReference(introVideoPath);
+  const showIntroVideoPoster = isImageReference(introVideoThumbnailPath);
 
   return (
     <main className="min-h-screen bg-white text-ink transition-colors dark:bg-slate-950 dark:text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/90">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-3" aria-label="CLA Solutions home">
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-ink text-sm font-black text-white dark:bg-white dark:text-ink">
-              {siteState.settings.companyName.slice(0, 3).toUpperCase()}
-            </span>
+            {hasLogo ? (
+              <img src={logoPath} alt={`${brandName} logo`} className="h-10 w-10 rounded-md object-contain" />
+            ) : null}
             <span>
-              <span className="block text-sm font-bold">{siteState.settings.companyName}</span>
+              <span className="block text-sm font-bold">{hasLogo ? brandName : "CLA Solutions"}</span>
               <span className="block text-xs text-slate-500 dark:text-slate-400">{siteState.settings.tagline}</span>
             </span>
           </a>
@@ -206,6 +231,42 @@ export default function SitePage() {
                 {siteState.settings.ctaSecondary} <ExternalLink size={17} />
               </a>
             </div>
+            {showIntroVideo ? (
+              <div className="mt-8 overflow-hidden rounded-md border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/80">
+                <div className="grid gap-4 p-4 sm:grid-cols-[0.92fr_1.08fr] sm:items-center">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand dark:text-cyan">Company intro</p>
+                    <h2 className="mt-2 text-lg font-black text-ink dark:text-white">
+                      {siteState.settings.introVideoTitle || "CLA Solutions"}
+                    </h2>
+                    {siteState.settings.introVideoDescription ? (
+                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{siteState.settings.introVideoDescription}</p>
+                    ) : null}
+                  </div>
+                  <div className="overflow-hidden rounded-md bg-slate-950">
+                    {isYouTubeEmbed(introVideoPath) ? (
+                      <iframe
+                        src={introVideoPath}
+                        title={siteState.settings.introVideoTitle || "CLA Solutions intro video"}
+                        className="aspect-video w-full"
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        className="aspect-video w-full bg-slate-950 object-cover"
+                        controls
+                        preload="metadata"
+                        poster={showIntroVideoPoster ? introVideoThumbnailPath : undefined}
+                      >
+                        <source src={introVideoPath} />
+                      </video>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div className="mt-10 grid max-w-xl grid-cols-3 gap-3">
               {siteState.heroStats.map((stat) => (
                 <div key={stat.label} className="rounded-md border border-slate-200 bg-white/70 p-4 text-slate-800 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
@@ -238,9 +299,16 @@ export default function SitePage() {
             </div>
             <div className="absolute inset-x-0 bottom-0 mx-auto max-w-[620px] rounded-md border border-slate-200 bg-white p-4 shadow-glow dark:border-white/10 dark:bg-slate-950">
               <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-white/10">
-                <div>
+                <div className="flex items-center gap-3">
+                  {hasLogo ? (
+                    <img src={logoPath} alt={`${brandName} logo`} className="h-10 w-10 rounded-md bg-white object-contain p-1" />
+                  ) : (
+                    <span className="rounded-md bg-ink px-3 py-2 text-xs font-black text-white dark:bg-white dark:text-ink">CLA Solutions</span>
+                  )}
+                  <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-cyan">Growth Dashboard</p>
                   <h2 className="mt-1 text-xl font-bold">Digital presence score</h2>
+                  </div>
                 </div>
                 <span className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">Live</span>
               </div>
@@ -528,8 +596,10 @@ export default function SitePage() {
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
           <div>
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-md bg-white text-sm font-black text-ink">CLA</span>
-              <strong>{siteState.settings.companyName}</strong>
+              {hasLogo ? (
+                <img src={logoPath} alt={`${brandName} logo`} className="h-10 w-10 rounded-md bg-white object-contain p-1" />
+              ) : null}
+              <strong>{hasLogo ? brandName : "CLA Solutions"}</strong>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300">{siteState.settings.tagline}.</p>
           </div>
@@ -549,7 +619,7 @@ export default function SitePage() {
           ))}
         </div>
         <div className="mx-auto mt-10 flex max-w-7xl flex-col gap-4 border-t border-white/10 pt-6 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
-          <p>(c) 2026 {siteState.settings.companyName}. All Rights Reserved.</p>
+          <p>(c) 2026 {brandName}. All Rights Reserved.</p>
           <div className="flex gap-4">
             {[
               ["LinkedIn", siteState.settings.linkedin],

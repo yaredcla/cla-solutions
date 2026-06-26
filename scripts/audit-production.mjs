@@ -64,6 +64,11 @@ console.log(
           state.settings?.instagram &&
           state.settings?.facebook
       ),
+      branding: {
+        logoPathConfigured: Boolean(state.settings?.logoPath),
+        introVideoEnabled: Boolean(state.settings?.introVideoEnabled),
+        introVideoPathConfigured: Boolean(state.settings?.introVideoPath)
+      },
       admins: admins.map((admin) => ({
         username: admin.username,
         status: admin.status,
